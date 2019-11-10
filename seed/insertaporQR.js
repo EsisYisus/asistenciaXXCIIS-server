@@ -1,50 +1,51 @@
-USE asistenciaxxciis;
+USE owltie_ciistacna_01_copy;
 delimiter $$
-CREATE FUNCTION marcaAsistenciaPorDNI( dni_asistencia INT,
+CREATE FUNCTION marcaAsistenciaPorCodigoQR( codigo_asistencia INT,
                                         horarioProgramado INT) 
-RETURNS VARCHAR(50)
+RETURNS VARCHAR(250)
 BEGIN
-	DECLARE nombre VARCHAR(50);
+	DECLARE nombre VARCHAR(250);
 	DECLARE marcaDeAsistencia INT;
  	set marcaDeAsistencia=1;
-	SET nombre = (SELECT CONCAT(nombres,' ',apellidos)
+	SET nombre = (SELECT CONCAT(nombre_usuario,' ',apellido_usuario)
 	FROM usuarios u 
     INNER JOIN inscripcion i
-	ON u.id=i.id_usuario 
-    WHERE u.dni=dni_asistencia);
-		
+	ON u.id_usuario=i.id_usuario 
+    WHERE i.cod_asistencia=codigo_asistencia);	
 	IF EXISTS 
-			(select dni 
-			FROM   usuarios 
-			WHERE  dni=dni_asistencia)
+			(select dni_usuario 
+			FROM usuarios u 
+			INNER JOIN inscripcion i
+			ON u.id_usuario=i.id_usuario 
+			WHERE i.cod_asistencia=codigo_asistencia)
             and
-                               curdate()<=(select fecha_programada 
-											  from horarios
-                                              where id_horario=horarioProgramado)
+                               curdate()<=(select dia_evento 
+											  from horario
+                                              where id=horarioProgramado)
 							   and
                                curtime() >=(select horario_ingreso 
-											  from horarios
-                                              where id_horario=horarioProgramado)
+											  from horario
+                                              where id=horarioProgramado)
 							   and 
                                curtime() <=(select horario_salida 
-											  from horarios
-                                              where id_horario=horarioProgramado)
+											  from horario
+                                              where id=horarioProgramado)
             THEN
 			IF NOT EXISTS 
 					(
                      select asistio 
-					 FROM   asistencias 
-					 WHERE  asistencias.id_usuario= 
+					 FROM   asistencia 
+					 WHERE  asistencia.id_usuario= 
 						       ( 
-							    SELECT     u.id 
+							    SELECT     u.id_usuario 
 								FROM       usuarios u 
 								INNER JOIN inscripcion i 
-								ON         u.id=i.id_usuario 
-								WHERE      u.dni=dni_asistencia
+								ON u.id_usuario=i.id_usuario 
+								WHERE i.cod_asistencia=codigo_asistencia
 							   ))
                                
                                THEN
-							   INSERT INTO asistencias 
+							   INSERT INTO asistencia 
 												( 
 												id_usuario, 
 												fecha_asistencia, 
@@ -54,9 +55,11 @@ BEGIN
 											VALUES 
 												( 
 												( 
-												 SELECT id 
-												 FROM   usuarios 
-												 WHERE  dni=dni_asistencia
+												 SELECT u.id_usuario 
+												 FROM       usuarios u 
+												INNER JOIN inscripcion i 
+												ON u.id_usuario=i.id_usuario 
+												WHERE i.cod_asistencia=codigo_asistencia
 												),
                                                 curdate(),
                                                 marcaDeAsistencia,
@@ -74,14 +77,14 @@ END $$
 
 delimiter ;
 
+
 SELECT * FROM asistencias;
 delete from asistencias;
+
 
 /**marcaAsistenciaPorDNI( dni_asistencia INT, 
 						   horarioProgramado INT) 
 **/
-SELECT marcaAsistenciaPorDNI(22222222,11);
-SELECT marcaAsistenciaPorDNI(11111111,11);
-SELECT marcaAsistenciaPorDNI(22222223,11);
-
-
+SELECT marcaAsistenciaPorCodigoQR(1010,11);
+SELECT marcaAsistenciaPorCodigoQR(1000,11);
+SELECT marcaAsistenciaPorCodigoQR(11111111,11);
